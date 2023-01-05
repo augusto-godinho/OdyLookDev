@@ -111,6 +111,10 @@ class ODYLOOKDEV_OT_export_materials(bpy.types.Operator):
         character_recolor = odylookdev.character_recolor
         has_recolor = odylookdev.character_has_recolor
 
+        character_folder = odylookdev.character_name
+        if odylookdev.has_diff_root_folder:
+            character_folder = odylookdev.root_folder
+
 
         meshes_dir = bpy.path.abspath("//")
         materials_dir = os.path.abspath(os.path.join(meshes_dir, os.pardir)) + '\Materials'
@@ -185,14 +189,14 @@ class ODYLOOKDEV_OT_export_materials(bpy.types.Operator):
                                                 img_path = "/Game/Prometheus/Characters/Commons/Textures/T_Matcap_Base.png.T_Matcap_Base.png"
                                             else:
                                                 if has_recolor and character_recolor in link.from_node.image.name.split('.')[0]: 
-                                                    img_path = f"/Game/Prometheus/Characters/{character_name}/{character_skin}/Textures/{character_recolor}/{link.from_node.image.name.split('.')[0]}"
+                                                    img_path = f"/Game/Prometheus/Characters/{character_folder}/{character_skin}/Textures/{character_recolor}/{link.from_node.image.name.split('.')[0]}"
                                                 else:
-                                                    img_path = f"/Game/Prometheus/Characters/{character_name}/{character_skin}/Textures/{link.from_node.image.name.split('.')[0]}"
+                                                    img_path = f"/Game/Prometheus/Characters/{character_folder}/{character_skin}/Textures/{link.from_node.image.name.split('.')[0]}"
 
                                             materials_data['Materials'][id]['Textures'][name] = img_path
                                 
 
-                                    if link.from_node.type == "SEPRGB":
+                                    if link.from_node.type == "SEPARATE_COLOR":
                                         for l in material.node_tree.links:
                                             if l.to_node == link.from_node:
                                                 if l.from_node.type == "TEX_IMAGE":
@@ -207,9 +211,9 @@ class ODYLOOKDEV_OT_export_materials(bpy.types.Operator):
                                                             img_path = "/Game/Prometheus/Characters/Commons/Textures/T_Matcap_Base.png.T_Matcap_Base"
                                                         else:
                                                             if has_recolor and character_recolor in l.from_node.image.name.split('.')[0]:
-                                                                img_path = f"/Game/Prometheus/Characters/{character_name}/{character_skin}/Textures/{character_recolor}/{l.from_node.image.name.split('.')[0]}"
+                                                                img_path = f"/Game/Prometheus/Characters/{character_folder}/{character_skin}/Textures/{character_recolor}/{l.from_node.image.name.split('.')[0]}"
                                                             else:
-                                                                img_path = f"/Game/Prometheus/Characters/{character_name}/{character_skin}/Textures/{l.from_node.image.name.split('.')[0]}"
+                                                                img_path = f"/Game/Prometheus/Characters/{character_folder}/{character_skin}/Textures/{l.from_node.image.name.split('.')[0]}"
                                                         
                                                         materials_data['Materials'][id]['Textures'][name] = img_path 
                             
@@ -226,8 +230,6 @@ class ODYLOOKDEV_OT_clean_duplicated_nodes(bpy.types.Operator):
     bl_idname = "odylookdev.clean_duplicated_nodes"
     bl_label = "Update Materials"
     bl_options = {'REGISTER', 'UNDO'}
-
-
 
     def execute(self, context):
 
@@ -675,4 +677,152 @@ class ODYLOOKDEV_OT_export_as_outline(bpy.types.Operator):
 
     def execute(self, context):
         ExportOutline()
+        return {'FINISHED'}
+
+
+#------->Export Main-------------
+
+def ExportMain():
+    D =  bpy.data
+    C =  bpy.context
+    S =  bpy.context.scene
+
+    objects = D.objects
+    d_objects = []
+    armature = objects[0]
+    excluded_objects = []
+
+    for obj in objects:
+        obj.select_set(True)
+
+        if obj.type == 'ARMATURE':
+            armature = obj
+        if obj.type == 'MESH':
+            if 'Outline' in obj.name:
+                excluded_objects.append(obj)
+            else:
+                o = obj.copy()
+                o.data = obj.data.copy()
+                o.animation_data_clear()
+                o.select_set(False)
+                d_objects.append(o)
+                C.collection.objects.link(o)
+                obj.select_set(False)
+                excluded_objects.append(obj)
+        
+    for obj in excluded_objects:
+        obj.select_set(False)
+
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.reveal()
+    bpy.ops.mesh.select_all(action='SELECT')
+    MarkVertex()
+
+    odylookdev = bpy.context.scene.odylookdev
+    character_name = odylookdev.character_name
+    character_skin = odylookdev.character_skin
+    outline_name = 'SK_'+character_name +'_'+character_skin+'.fbx'
+
+    meshes_dir = bpy.path.abspath("//")
+    path = os.path.join(meshes_dir, outline_name)
+    print(str(path))
+    
+    #Exporting the main mesh
+    bpy.ops.export_scene.fbx(filepath=str(path), 
+        check_existing=True,
+        filter_glob='*.fbx',
+        use_selection=True,
+        use_visible=False,
+        use_active_collection=False,
+        global_scale=1.0, 
+        apply_unit_scale=True,
+        apply_scale_options='FBX_SCALE_NONE',
+        use_space_transform=True,
+        bake_space_transform=False, 
+        object_types={'ARMATURE', 'EMPTY', 'MESH'},
+        use_mesh_modifiers=True, use_mesh_modifiers_render=True, mesh_smooth_type='OFF',
+        use_subsurf=False, use_mesh_edges=False, use_tspace=False, use_triangles=False,
+        use_custom_props=False,
+        add_leaf_bones=False,
+        primary_bone_axis='Y', secondary_bone_axis='X',
+        use_armature_deform_only=False,
+        armature_nodetype='NULL',
+        bake_anim=True,
+        bake_anim_use_all_bones=True,
+        bake_anim_use_nla_strips=True,
+        bake_anim_use_all_actions=True,
+        bake_anim_force_startend_keying=True,
+        bake_anim_step=1.0,
+        bake_anim_simplify_factor=1.0,
+        path_mode='AUTO',
+        embed_textures=False,
+        batch_mode='OFF',
+        use_batch_own_dir=True,
+        use_metadata=True,
+        axis_forward='-Z', axis_up='Y')
+    
+    for obj in objects:
+        obj.select_set(False)
+    
+    for obj in d_objects:
+        obj.select_set(True)
+
+    bpy.ops.object.delete()
+
+def MarkVertex():
+    D =  bpy.data
+    C =  bpy.context
+    S =  bpy.context.scene
+
+    objects = bpy.context.selected_objects
+    o_id=0
+    for obj in objects:
+        if obj.type == "MESH":
+            if True:
+                if obj.mode == 'EDIT':
+                    bpy.ops.object.editmode_toggle()
+
+                mesh = obj.data
+                
+                vcolor_names = []
+                for vcolor in mesh.vertex_colors:
+                    vcolor_names.append(vcolor.name)
+                
+                for vname in vcolor_names:
+                    mesh.vertex_colors.remove(mesh.vertex_colors[vname])
+
+                if not mesh.vertex_colors:
+                    mesh.vertex_colors.new(name='Col', do_init=True)
+
+                if "Col" in mesh.vertex_colors:
+                    color_layer = mesh.vertex_colors["Col"]
+                else:
+                    color_layer = mesh.vertex_colors.new(name="Col")
+                
+                bpy.ops.geometry.color_attribute_render_set(name="Col")
+                
+                i=0
+                for poly in mesh.polygons:
+                    for idx in poly.loop_indices:
+                        id = mesh.loops[i].vertex_index
+                        col = color_layer.data[i].color
+
+                        if mesh.vertices[id].select == True:
+                            pos = 1
+                            if mesh.vertices[id].co[0] <= 0:
+                                pos = 0
+                            
+                            color_layer.data[i].color = [pos,0,0,0]
+                        i+=1
+                
+                o_id += 1
+
+
+class ODYLOOKDEV_OT_export_main(bpy.types.Operator):
+    bl_idname = "odylookdev.export_main"
+    bl_label = "Export Main"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        ExportMain()
         return {'FINISHED'}

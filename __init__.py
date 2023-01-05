@@ -32,8 +32,8 @@ bl_info = {
     "name" : "Ody Look Dev",
     "author" : "Odyssey Interactive",
     "description" : "",
-    "blender" : (2, 80, 0),
-    "version" : (0, 0, 1),
+    "blender" : (3, 4, 0),
+    "version" : (0, 0, 2),
     "location" : "View3D",
     "warning" : "",
     "category" : "Pipeline"
@@ -56,8 +56,10 @@ class NodeTemplatePrefs(AddonPreferences):
     bl_idname = __name__
 
     search_path: StringProperty(
-        name="Directory of blend files with node-groups",
+        name="Base Files",
         subtype='DIR_PATH',
+        default="O:\Odyssey\OmegaPerforce\RawContent\Prometheus\Characters\Commons\BaseFiles",
+
     )
 
     def draw(self, context):
@@ -76,7 +78,9 @@ classes = [
     viewUI.ODYLOOKDEV_PT_view_panel_settings,
     viewUI.ODYLOOKDEV_PT_view_panel_actions,
     viewUI.ODYLOOKDEV_PT_view_panel_Outline,
+    viewUI.ODYLOOKDEV_PT_object_panel,
     operators.ODYLOOKDEV_OT_export_materials,
+    operators.ODYLOOKDEV_OT_export_main,
     operators.ODYLOOKDEV_OT_add_outline,
     operators.NODE_OT_template_add,
     operators.NODE_MT_template_add,
@@ -104,6 +108,7 @@ def register():
         bpy.utils.register_class(cls)
     
     bpy.types.NODE_MT_add.append(operators.add_node_button)
+    
 
 
 def unregister():

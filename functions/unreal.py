@@ -152,15 +152,19 @@ def export_materials(materials_data):
     remote_exec.start()
     
     odylookdev = bpy.context.scene.odylookdev
+    
+    character_folder = odylookdev.character_name
+    if odylookdev.has_diff_root_folder:
+        character_folder = odylookdev.root_folder
 
     
     for material in materials_data['Materials']:
         if odylookdev.character_has_recolor:
             mat_name = f"MI_{odylookdev.character_name}_{odylookdev.character_skin}_{odylookdev.character_recolor}_{material['Name']}"
-            mat_path = f"{odylookdev.character_name}/{odylookdev.character_skin}/Materials/{odylookdev.character_recolor}"
+            mat_path = f"{character_folder}/{odylookdev.character_skin}/Materials/{odylookdev.character_recolor}"
         else:
             mat_name = f"MI_{odylookdev.character_name}_{odylookdev.character_skin}_{material['Name']}"
-            mat_path = f"{odylookdev.character_name}/{odylookdev.character_skin}/Materials"
+            mat_path = f"{character_folder}/{odylookdev.character_skin}/Materials"
 
 
         mat_parent = material['Parent']
