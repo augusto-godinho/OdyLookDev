@@ -33,7 +33,7 @@ bl_info = {
     "author" : "Odyssey Interactive",
     "description" : "",
     "blender" : (3, 4, 0),
-    "version" : (0, 0, 2),
+    "version" : (0, 0, 4),
     "location" : "View3D",
     "warning" : "",
     "category" : "Pipeline"
@@ -45,11 +45,6 @@ def register():
 def unregister():
     ...
 
-def node_search_path(context):
-    preferences = context.preferences
-    addon_prefs = preferences.addons["OdyLookDev"].preferences
-    dirpath = addon_prefs.search_path
-    return dirpath
 
 
 class NodeTemplatePrefs(AddonPreferences):

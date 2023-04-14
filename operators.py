@@ -519,15 +519,6 @@ def GetColor(col, flow):
         final_col = (col[0], col[1], col[2], 0)
     return final_col
 
-def GetThickness(thc, flow):
-    final_col = (thc[0], thc[1], thc[2], thc[3])
-    if flow == "ADD":
-        final_col = (1, thc[1], thc[2], thc[3])
-
-    if flow == "REMOVE":
-        final_col = (0, thc[1], thc[2], thc[3])
-    return final_col
-
 def Recolor(flow):
     D =  bpy.data
     C =  bpy.context
@@ -546,24 +537,16 @@ def Recolor(flow):
         if "Col" in mesh.vertex_colors:
             color_layer = mesh.vertex_colors["Col"]
         else:
-            thickness_layer = mesh.vertex_colors.new(name="Col")
-
-        if "Thickness" in mesh.vertex_colors:
-            thickness_layer = mesh.vertex_colors["Thickness"]
-        else:
-            thickness_layer = mesh.vertex_colors.new(name="Thickness")
+            color_layer = mesh.vertex_colors.new(name="Col")
         
         i=0
         for poly in mesh.polygons:
             for idx in poly.loop_indices:
                 id = mesh.loops[i].vertex_index
                 col = color_layer.data[i].color
-                thc = thickness_layer.data[i].color
 
                 if mesh.vertices[id].select == True:
                     color_layer.data[i].color = GetColor(col, flow)
-                    thickness_layer.data[i].color = GetThickness(thc, flow)
-
                 i+=1
         
         o_id += 1
@@ -603,9 +586,11 @@ def ExportOutline():
             C.collection.objects.link(o)
             d_objects.append(o)
             obj.select_set(False)
+            print(obj.name+" -> Converted to outline: "+o.name)
     
     for obj in d_objects:
         obj.select_set(True)
+        
 
     outline = d_objects[0]
     C.view_layer.objects.active = outline
@@ -766,6 +751,7 @@ def ExportMain():
     
     for obj in d_objects:
         obj.select_set(True)
+        print("Mode: "+obj.mode)
 
     bpy.ops.object.delete()
 
@@ -778,9 +764,10 @@ def MarkVertex():
     o_id=0
     for obj in objects:
         if obj.type == "MESH":
-            if True:
+            if 'Head' in obj.name or 'Face' in obj.name:
                 if obj.mode == 'EDIT':
                     bpy.ops.object.editmode_toggle()
+                    print("Change vertex color: "+obj.name)
 
                 mesh = obj.data
                 
