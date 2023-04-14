@@ -82,6 +82,7 @@ classes = [
     operators.ODYLOOKDEV_OT_clean_duplicated_nodes,
     operators.ODYLOOKDEV_OT_set_vertex_alpha,
     operators.ODYLOOKDEV_OT_export_as_outline,
+    operators.ODYLOOKDEV_OT_export_with_outline,
     NodeTemplatePrefs
 ]
 

@@ -58,6 +58,7 @@ class ODYLOOKDEV_PT_view_panel_actions(bpy.types.Panel):
         export_box = box.box()
         export_box.operator("odylookdev.export_materials")
         export_box.operator("odylookdev.export_main")
+        export_box.operator("odylookdev.export_with_outline")
 
 #>>>------PANEL DRAWER------->
 class ODYLOOKDEV_PT_view_panel_Outline(bpy.types.Panel):

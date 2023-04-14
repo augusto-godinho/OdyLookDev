@@ -505,8 +505,6 @@ def add_node_button(self, context):
         icon='PLUGIN',
     )
 
-
-
 #------------------------------------------------------------
 #-----Vertex Paint-------------------------------------------
 
@@ -576,17 +574,18 @@ def ExportOutline():
     armature = objects[0]
 
     for obj in objects:
-        obj.select_set(True)
-        if obj.type == 'ARMATURE':
-            armature = obj
-        if obj.type == 'MESH':
-            o = obj.copy()
-            o.data = obj.data.copy()
-            o.animation_data_clear()
-            C.collection.objects.link(o)
-            d_objects.append(o)
-            obj.select_set(False)
-            print(obj.name+" -> Converted to outline: "+o.name)
+        if obj is not None:
+            obj.select_set(True)
+            if obj.type == 'ARMATURE':
+                armature = obj
+            if obj.type == 'MESH':
+                o = obj.copy()
+                o.data = obj.data.copy()
+                o.animation_data_clear()
+                C.collection.objects.link(o)
+                d_objects.append(o)
+                obj.select_set(False)
+                print(obj.name+" -> Converted to outline: "+o.name)
     
     for obj in d_objects:
         obj.select_set(True)
@@ -678,22 +677,23 @@ def ExportMain():
     excluded_objects = []
 
     for obj in objects:
-        obj.select_set(True)
+        if obj is not None:
+            obj.select_set(True)
 
-        if obj.type == 'ARMATURE':
-            armature = obj
-        if obj.type == 'MESH':
-            if 'Outline' in obj.name:
-                excluded_objects.append(obj)
-            else:
-                o = obj.copy()
-                o.data = obj.data.copy()
-                o.animation_data_clear()
-                o.select_set(False)
-                d_objects.append(o)
-                C.collection.objects.link(o)
-                obj.select_set(False)
-                excluded_objects.append(obj)
+            if obj.type == 'ARMATURE':
+                armature = obj
+            if obj.type == 'MESH':
+                if 'Outline' in obj.name:
+                    excluded_objects.append(obj)
+                else:
+                    o = obj.copy()
+                    o.data = obj.data.copy()
+                    o.animation_data_clear()
+                    o.select_set(False)
+                    d_objects.append(o)
+                    C.collection.objects.link(o)
+                    obj.select_set(False)
+                    excluded_objects.append(obj)
         
     for obj in excluded_objects:
         obj.select_set(False)
@@ -812,4 +812,169 @@ class ODYLOOKDEV_OT_export_main(bpy.types.Operator):
 
     def execute(self, context):
         ExportMain()
+        return {'FINISHED'}
+
+def ExportWithOutline():
+    D =  bpy.data
+    C =  bpy.context
+    S =  bpy.context.scene
+
+    objects = D.collections['Character'].all_objects
+    outline_objects = []
+    armature = objects[0]
+
+#copy the outline meshes
+    for obj in objects:
+        if obj is not None:
+            obj.select_set(True)
+            if obj.type == 'ARMATURE':
+                armature = obj
+            if obj.type == 'MESH':
+                o = obj.copy()
+                o.data = obj.data.copy()
+                o.animation_data_clear()
+                C.collection.objects.link(o)
+                outline_objects.append(o)
+                obj.select_set(False)
+                print(obj.name+" -> Converted to outline: "+o.name)
+    
+    for obj in outline_objects:
+        obj.select_set(True)
+        
+
+    outline = outline_objects[0]
+    C.view_layer.objects.active = outline
+    bpy.ops.object.join()
+    outline.name = "OutlineToExport"
+    outline.data.materials.clear()
+    outline.data.materials.append(D.materials['Outline'])
+
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.reveal()
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.flip_normals()
+    bpy.ops.object.editmode_toggle()
+
+#mark vertex color face
+    objects = D.objects
+    d_objects = []
+    armature = objects[0]
+    excluded_objects = []
+
+    for obj in objects:        
+        if obj is not None:
+            if obj.type == 'ARMATURE':
+                armature = obj
+            if obj.type == 'MESH':
+                if 'Outline' in obj.name:
+                    excluded_objects.append(obj)
+                else:
+                    o = obj.copy()
+                    o.data = obj.data.copy()
+                    o.animation_data_clear()
+                    o.select_set(False)
+                    o.name = obj.name+"_exp"
+                    d_objects.append(o)
+                    C.collection.objects.link(o)
+                    obj.select_set(False)
+                    excluded_objects.append(obj)
+        
+    for obj in objects:
+        print("Selecting: "+obj.name)
+        obj.select_set(True)
+
+    for obj in outline_objects:
+        print("Deselecting: "+obj.name)
+        obj.select_set(False)
+
+    for obj in excluded_objects:
+        print("Deselecting: "+obj.name)
+        obj.select_set(False)
+
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.reveal()
+    bpy.ops.mesh.select_all(action='SELECT')
+    MarkVertex()
+    print("Face Vertex Colors")
+
+    for obj in outline_objects:
+        print("Selecting: "+obj.name)
+        obj.select_set(True)
+
+    for obj in d_objects:
+        print("Selecting: "+obj.name)
+        obj.select_set(True)
+
+    odylookdev = bpy.context.scene.odylookdev
+    character_name = odylookdev.character_name
+    character_skin = odylookdev.character_skin
+    outline_name = 'SK_'+character_name +'_'+character_skin+'.fbx'
+
+    meshes_dir = bpy.path.abspath("//")
+    path = os.path.join(meshes_dir, outline_name)
+    print(str(path))
+    
+    #Exporting with the outline
+    bpy.ops.export_scene.fbx(filepath=str(path), 
+        check_existing=True,
+        filter_glob='*.fbx',
+        use_selection=True,
+        use_visible=False,
+        use_active_collection=False,
+        global_scale=1.0, 
+        apply_unit_scale=True,
+        apply_scale_options='FBX_SCALE_NONE',
+        use_space_transform=True,
+        bake_space_transform=False, 
+        object_types={'ARMATURE', 'EMPTY', 'MESH'},
+        use_mesh_modifiers=True, use_mesh_modifiers_render=True, mesh_smooth_type='OFF',
+        use_subsurf=False, use_mesh_edges=False, use_tspace=False, use_triangles=False,
+        use_custom_props=False,
+        add_leaf_bones=False,
+        primary_bone_axis='Y', secondary_bone_axis='X',
+        use_armature_deform_only=False,
+        armature_nodetype='NULL',
+        bake_anim=True,
+        bake_anim_use_all_bones=True,
+        bake_anim_use_nla_strips=True,
+        bake_anim_use_all_actions=True,
+        bake_anim_force_startend_keying=True,
+        bake_anim_step=1.0,
+        bake_anim_simplify_factor=1.0,
+        path_mode='AUTO',
+        embed_textures=False,
+        batch_mode='OFF',
+        use_batch_own_dir=True,
+        use_metadata=True,
+        axis_forward='-Z', axis_up='Y')
+    
+    for obj in objects:
+        if obj is not None:
+            if obj.mode == 'EDIT':
+                    bpy.ops.object.editmode_toggle()
+    
+    for obj in objects:
+        print("Deselecting for deleting: "+obj.name)
+        obj.select_set(False)
+    
+    for obj in outline_objects:
+        print("Selecting for deleting: "+obj.name)
+        obj.select_set(True)
+
+    for obj in d_objects:
+        print("Selecting for deleting: "+obj.name)
+        obj.select_set(True)
+
+    #outline.select_set(True)
+    #C.view_layer.objects.active = outline
+
+    bpy.ops.object.delete(use_global=False)
+
+class ODYLOOKDEV_OT_export_with_outline(bpy.types.Operator):
+    bl_idname = "odylookdev.export_with_outline"
+    bl_label = "Export With Outline"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        ExportWithOutline()
         return {'FINISHED'}
